@@ -35,6 +35,14 @@ This project is a Django-based web application for managing AI systems in accord
 - `src/aims/` – Django project settings
 - `src/core/` – Main app for AIMS models and logic
 
+## Screenshots
+
+### Main Dashboard
+![Main Dashboard](screenshots/main.png)
+
+### System Card View
+![System Card](screenshots/card.png)
+
 ## Sources
 - [Django](https://www.djangoproject.com/) – Web framework
 - [Bootstrap](https://getbootstrap.com/) – Frontend framework
@@ -43,6 +51,22 @@ This project is a Django-based web application for managing AI systems in accord
 - [ISO 31000](https://www.iso.org/iso-31000-risk-management.html) – Risk management standard
 - [ISO 27001](https://www.iso.org/isoiec-27001-information-security.html) – Information security management standard
 - [James Kavanagh](https://www.linkedin.com/in/jameskavanagh/) – Author and AI governance expert
+
+## Roadmap
+
+### OWASP Top 10 LLM Vulnerabilities
+- Integrate controls to address vulnerabilities specific to large language models (LLMs), such as:
+  - Injections and prompt manipulation
+  - Data leakage prevention
+  - Model poisoning and adversarial attacks
+  - Secure API integrations
+
+### ISO 42001 Controls
+- Expand the implementation of ISO 42001:2023 controls, including:
+  - Enhanced risk assessment frameworks
+  - Continuous monitoring and auditing mechanisms
+  - Improved stakeholder engagement processes
+  - Comprehensive compliance tracking and reporting tools
 
 ## License
 AGLPv3
