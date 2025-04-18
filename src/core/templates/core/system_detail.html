@@ -1,0 +1,285 @@
+{% extends 'core/base.html' %}
+
+{% block title %}{{ system.name }}{% endblock %}
+
+{% block content %}
+<!-- Breadcrumb -->
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
+        <li class="breadcrumb-item active">{{ system.name }}</li>
+    </ol>
+</nav>
+
+<div class="row">
+    <!-- System Overview -->
+    <div class="col-md-12 mb-4">
+        <div class="card dashboard-card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h4>{{ system.name }}</h4>
+                <span class="badge {% if system.status == 'ACTIVE' %}bg-success{% else %}bg-warning{% endif %}">
+                    {{ system.status }}
+                </span>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-8">
+                        <p><strong>Description:</strong> {{ system.description }}</p>
+                        <p><strong>Owner:</strong> {{ system.owner }}</p>
+                        <p><strong>Vendor:</strong> {{ system.vendor }}</p>
+                        <p><strong>Version:</strong> {{ system.version }}</p>
+                        <p><strong>Last Reviewed:</strong> {{ system.last_reviewed|date:"F j, Y" }}</p>
+                    </div>
+                    <div class="col-md-4">
+                        <canvas id="systemRiskChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Capabilities -->
+    <div class="col-md-6 mb-4">
+        <div class="card dashboard-card">
+            <div class="card-header">
+                <h4>System Capabilities</h4>
+            </div>
+            <div class="card-body">
+                <div class="list-group">
+                    {% for capability in capabilities %}
+                    <div class="list-group-item">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h5 class="mb-1">{{ capability.name }}</h5>
+                            <small>{{ capability.use_cases.count }} use cases</small>
+                        </div>
+                        <p class="mb-1">{{ capability.description }}</p>
+                        <small>Type: {{ capability.type }}</small>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Risk Assessments -->
+    <div class="col-md-6 mb-4">
+        <div class="card dashboard-card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h4>Risk Assessments</h4>
+                <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#newRiskAssessmentModal">
+                    Add Assessment
+                </button>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Risk Type</th>
+                                <th>Level</th>
+                                <th>Likelihood</th>
+                                <th>Impact</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for assessment in risk_assessments %}
+                            <tr class="risk-{{ assessment.risk_level|lower }}">
+                                <td>{{ assessment.risk_type }}</td>
+                                <td>
+                                    <span class="badge {% if assessment.risk_level == 'HIGH' %}bg-danger{% elif assessment.risk_level == 'MEDIUM' %}bg-warning{% else %}bg-success{% endif %}">
+                                        {{ assessment.risk_level }}
+                                    </span>
+                                </td>
+                                <td>{{ assessment.likelihood }}/5</td>
+                                <td>{{ assessment.impact }}/5</td>
+                                <td>{{ assessment.status }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Use Cases -->
+    <div class="col-md-12">
+        <div class="card dashboard-card">
+            <div class="card-header">
+                <h4>Related Use Cases</h4>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table" id="systemUseCasesTable">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Risk Level</th>
+                                <th>Status</th>
+                                <th>Capabilities</th>
+                                <th>Stakeholders</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for capability in capabilities %}
+                                {% for use_case in capability.use_cases.all %}
+                                <tr class="risk-{{ use_case.risk_level|lower }}">
+                                    <td>{{ use_case.name }}</td>
+                                    <td>
+                                        <span class="badge {% if use_case.risk_level == 'HIGH' %}bg-danger{% elif use_case.risk_level == 'MEDIUM' %}bg-warning{% else %}bg-success{% endif %}">
+                                            {{ use_case.risk_level }}
+                                        </span>
+                                    </td>
+                                    <td>{{ use_case.status }}</td>
+                                    <td>
+                                        {% for cap in use_case.capabilities.all %}
+                                        <span class="badge bg-primary">{{ cap.name }}</span>
+                                        {% endfor %}
+                                    </td>
+                                    <td>
+                                        {% for stakeholder in use_case.stakeholders.all %}
+                                        <span class="badge bg-secondary">{{ stakeholder.name }}</span>
+                                        {% endfor %}
+                                    </td>
+                                    <td>
+                                        <a href="#" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#useCaseModal-{{ use_case.id }}">
+                                            Details
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Risk Assessment Modal -->
+<div class="modal fade" id="newRiskAssessmentModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">New Risk Assessment</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" action="{% url 'add_risk_assessment' system.id %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <input type="hidden" name="related_entity_type" value="SYSTEM">
+                    <input type="hidden" name="related_entity_id" value="{{ system.id }}">
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Risk Type</label>
+                        <input type="text" class="form-control" name="risk_type" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Risk Description</label>
+                        <textarea class="form-control" name="risk_description" rows="3" required></textarea>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col">
+                            <label class="form-label">Risk Level</label>
+                            <select class="form-select" name="risk_level" required>
+                                {% for level, label in risk_levels %}
+                                <option value="{{ level }}">{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col">
+                            <label class="form-label">Likelihood (1-5)</label>
+                            <input type="number" class="form-control" name="likelihood" min="1" max="5" required>
+                        </div>
+                        <div class="col">
+                            <label class="form-label">Impact (1-5)</label>
+                            <input type="number" class="form-control" name="impact" min="1" max="5" required>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Mitigation Measures</label>
+                        <textarea class="form-control" name="mitigation_measures" rows="3" required></textarea>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col">
+                            <label class="form-label">Risk Owner</label>
+                            <input type="text" class="form-control" name="risk_owner" required>
+                        </div>
+                        <div class="col">
+                            <label class="form-label">Review Date</label>
+                            <input type="date" class="form-control" name="review_date" required>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">References</label>
+                        <textarea class="form-control" name="references" rows="2" placeholder="e.g., ISO/IEC 23894 references"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-primary">Save Risk Assessment</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Include Use Case Modals -->
+{% include 'core/includes/use_case_modal.html' %}
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // System Risk Distribution Chart
+    const systemRiskCtx = document.getElementById('systemRiskChart').getContext('2d');
+    new Chart(systemRiskCtx, {
+        type: 'doughnut',
+        data: {
+            labels: ['High', 'Medium', 'Low'],
+            datasets: [{
+                data: [
+                    {{ high_risk_count }},
+                    {{ medium_risk_count }},
+                    {{ low_risk_count }}
+                ],
+                backgroundColor: [
+                    '#dc3545',  // High - danger
+                    '#ffc107',  // Medium - warning
+                    '#198754'   // Low - success
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                },
+                title: {
+                    display: true,
+                    text: 'Risk Distribution'
+                }
+            }
+        }
+    });
+
+    // Initialize DataTable for use cases
+    const systemUseCasesTable = new DataTable('#systemUseCasesTable', {
+        pageLength: 10,
+        order: [[1, 'desc']], // Sort by risk level by default
+        dom: 'Bfrtip',
+        buttons: ['csv', 'excel', 'pdf']
+    });
+});
+</script>
+{% endblock %}

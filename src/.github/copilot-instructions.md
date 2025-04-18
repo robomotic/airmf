@@ -1,0 +1,3 @@
+<!-- Use this file to provide workspace-specific custom instructions to Copilot. For more details, visit https://code.visualstudio.com/docs/copilot/copilot-customization#_use-a-githubcopilotinstructionsmd-file -->
+
+This project is a Django-based AI Management System (AIMS) web application. Model Systems, Capabilities, Use Cases, Users, Stakeholders, Model Cards, and AI Risk Assessments as described in MODEL.md. Use modern, accessible, and maintainable code and UI patterns.

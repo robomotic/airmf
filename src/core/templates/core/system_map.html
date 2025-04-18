@@ -1,0 +1,117 @@
+{% extends 'core/base.html' %}
+
+{% block title %}System Mapping{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
+        <li class="breadcrumb-item active">System Mapping</li>
+    </ol>
+</nav>
+
+<div class="card dashboard-card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h4>AI System Mapping</h4>
+        <div class="btn-group">
+            <button class="btn btn-outline-primary btn-sm" id="fitButton">
+                <i class="bi bi-arrows-fullscreen"></i> Fit to View
+            </button>
+            <button class="btn btn-outline-primary btn-sm" id="resetButton">
+                <i class="bi bi-arrow-counterclockwise"></i> Reset Layout
+            </button>
+        </div>
+    </div>
+    <div class="card-body position-relative">
+        <div id="systemMap"></div>
+        <div class="network-legend">
+            <h6>Legend</h6>
+            <div><span class="badge bg-dark">Systems</span></div>
+            <div><span class="badge" style="background-color: #ff7043">Capabilities</span></div>
+            <div><span class="badge" style="background-color: #66bb6a">Use Cases</span></div>
+            <div><span class="badge" style="background-color: #ab47bc">Stakeholders</span></div>
+            <div><span class="badge" style="background-color: #42a5f5">Users</span></div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const graphData = {{ network_data|safe }};
+    
+    // Register the dagre layout
+    cytoscape.use(dagre);
+    
+    const cy = cytoscape({
+        container: document.getElementById('systemMap'),
+        elements: {
+            nodes: graphData.nodes,
+            edges: graphData.edges
+        },
+        style: [
+            {
+                selector: 'node',
+                style: {
+                    'label': 'data(label)',
+                    'text-wrap': 'wrap',
+                    'text-max-width': '100px',
+                    'font-size': '10px',
+                    'text-valign': 'center',
+                    'text-halign': 'center',
+                    'background-color': 'data(color)',
+                    'width': '30px',
+                    'height': '30px'
+                }
+            },
+            {
+                selector: 'edge',
+                style: {
+                    'width': 1,
+                    'line-color': '#ccc',
+                    'target-arrow-color': '#ccc',
+                    'target-arrow-shape': 'triangle',
+                    'curve-style': 'bezier'
+                }
+            },
+            {
+                selector: 'node:selected',
+                style: {
+                    'border-width': '2px',
+                    'border-color': '#333'
+                }
+            }
+        ],
+        layout: {
+            name: 'dagre',
+            rankDir: 'LR',
+            ranker: 'tight-tree',
+            spacingFactor: 1.25,
+            padding: 50
+        }
+    });
+
+    // Add click handlers for buttons
+    document.getElementById('fitButton').addEventListener('click', () => {
+        cy.fit();
+    });
+    
+    document.getElementById('resetButton').addEventListener('click', () => {
+        cy.layout({name: 'dagre'}).run();
+    });
+
+    // Add node click handler
+    cy.on('tap', 'node', function(evt) {
+        const node = evt.target;
+        const nodeData = node.data();
+        console.log('Node clicked:', nodeData);
+    });
+
+    // Initial layout fit
+    cy.ready(() => {
+        cy.fit();
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,66 @@
+{% for use_case in use_cases %}
+<div class="modal fade" id="useCaseModal-{{ use_case.id }}" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">{{ use_case.name }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Details</h6>
+                        <p><strong>Description:</strong><br>{{ use_case.description }}</p>
+                        <p><strong>Business Objective:</strong><br>{{ use_case.business_objective }}</p>
+                        <p><strong>Risk Level:</strong>
+                            <span class="badge {% if use_case.risk_level == 'HIGH' %}bg-danger{% elif use_case.risk_level == 'MEDIUM' %}bg-warning{% else %}bg-success{% endif %}">
+                                {{ use_case.risk_level }}
+                            </span>
+                        </p>
+                        <p><strong>Status:</strong>
+                            <span class="badge bg-secondary">{{ use_case.status }}</span>
+                        </p>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Compliance & Data</h6>
+                        <p><strong>Compliance Requirements:</strong><br>{{ use_case.compliance_requirements }}</p>
+                        <p><strong>Data Sensitivity:</strong><br>{{ use_case.data_sensitivity }}</p>
+                    </div>
+                </div>
+                <hr>
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Capabilities</h6>
+                        <div class="list-group">
+                            {% for capability in use_case.capabilities.all %}
+                            <div class="list-group-item">
+                                <h6 class="mb-1">{{ capability.name }}</h6>
+                                <small>{{ capability.type }}</small>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Stakeholders</h6>
+                        <div class="list-group">
+                            {% for stakeholder in use_case.stakeholders.all %}
+                            <div class="list-group-item">
+                                <h6 class="mb-1">{{ stakeholder.name }}</h6>
+                                <small>{{ stakeholder.type }}</small>
+                                <p class="mb-1">{{ stakeholder.interest_or_concern }}</p>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <a href="{% url 'admin:core_usecase_change' use_case.id %}" class="btn btn-primary" target="_blank">
+                    Edit in Admin
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endfor %}

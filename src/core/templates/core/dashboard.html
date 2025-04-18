@@ -1,0 +1,345 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<!-- Breadcrumb -->
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item active">Dashboard</li>
+    </ol>
+</nav>
+
+<!-- Summary Cards -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card dashboard-card bg-primary text-white">
+            <div class="card-body">
+                <h5 class="card-title">Total Use Cases</h5>
+                <h2>{{ total_use_cases }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card dashboard-card bg-danger text-white">
+            <div class="card-body">
+                <h5 class="card-title">High Risk Cases</h5>
+                <h2>{{ total_high_risks }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card dashboard-card bg-success text-white">
+            <div class="card-body">
+                <h5 class="card-title">Capabilities</h5>
+                <h2>{{ total_capabilities }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card dashboard-card bg-info text-white">
+            <div class="card-body">
+                <h5 class="card-title">Stakeholders</h5>
+                <h2>{{ total_stakeholders }}</h2>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Systems Overview -->
+<div class="row">
+    <div class="col-md-12 mb-4">
+        <div class="card dashboard-card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h4>AI Systems Overview</h4>
+                <div class="btn-group">
+                    <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#filterModal">
+                        <i class="bi bi-funnel"></i> Filters
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    {% for system in systems %}
+                    <div class="col-md-6 mb-3">
+                        <div class="card h-100">
+                            <div class="card-body">
+                                <h5 class="card-title">
+                                    <a href="{% url 'system_detail' system.id %}" class="text-decoration-none">
+                                        {{ system.name }}
+                                    </a>
+                                </h5>
+                                <p class="card-text">{{ system.description }}</p>
+                                <p><strong>Owner:</strong> {{ system.owner }}</p>
+                                <p><strong>Version:</strong> {{ system.version }}</p>
+                                <p><strong>Status:</strong> 
+                                    <span class="badge {% if system.status == 'ACTIVE' %}bg-success{% else %}bg-warning{% endif %}">
+                                        {{ system.status }}
+                                    </span>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Risk Distribution -->
+    <div class="col-md-4 mb-4">
+        <div class="card dashboard-card">
+            <div class="card-header">
+                <h4>Risk Distribution</h4>
+            </div>
+            <div class="card-body">
+                <canvas id="riskChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Status Distribution -->
+    <div class="col-md-4 mb-4">
+        <div class="card dashboard-card">
+            <div class="card-header">
+                <h4>Status Distribution</h4>
+            </div>
+            <div class="card-body">
+                <canvas id="statusChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stakeholder Impact -->
+    <div class="col-md-4 mb-4">
+        <div class="card dashboard-card">
+            <div class="card-header">
+                <h4>Stakeholder Impact</h4>
+            </div>
+            <div class="card-body">
+                <canvas id="stakeholderChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Use Cases Table -->
+<div class="card dashboard-card">
+    <div class="card-header">
+        <h4>Use Cases Overview</h4>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table" id="useCasesTable">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Risk Level</th>
+                        <th>Status</th>
+                        <th>Capabilities</th>
+                        <th>Stakeholders</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for use_case in use_cases %}
+                    <tr class="risk-{{ use_case.risk_level|lower }}">
+                        <td>{{ use_case.name }}</td>
+                        <td>
+                            <span class="badge {% if use_case.risk_level == 'HIGH' %}bg-danger{% elif use_case.risk_level == 'MEDIUM' %}bg-warning{% else %}bg-success{% endif %}">
+                                {{ use_case.risk_level }}
+                            </span>
+                        </td>
+                        <td>{{ use_case.status }}</td>
+                        <td>
+                            {% for capability in use_case.capabilities.all %}
+                            <span class="badge bg-primary">{{ capability.name }}</span>
+                            {% endfor %}
+                        </td>
+                        <td>
+                            {% for stakeholder in use_case.stakeholders.all %}
+                            <span class="badge bg-secondary">{{ stakeholder.name }}</span>
+                            {% endfor %}
+                        </td>
+                        <td>
+                            <a href="#" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#useCaseModal-{{ use_case.id }}">
+                                Details
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Filter Modal -->
+<div class="modal fade" id="filterModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Filter Use Cases</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="filterForm">
+                    <div class="mb-3">
+                        <label class="form-label">Risk Level</label>
+                        <select class="form-select" name="risk_level">
+                            <option value="">All</option>
+                            {% for value, label in risk_level_choices %}
+                            <option value="{{ value }}">{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Status</label>
+                        <select class="form-select" name="status">
+                            <option value="">All</option>
+                            {% for value, label in status_choices %}
+                            <option value="{{ value }}">{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Capability</label>
+                        <select class="form-select" name="capability">
+                            <option value="">All</option>
+                            {% for cap in capabilities %}
+                            <option value="{{ cap.id }}">{{ cap.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" id="applyFilters">Apply Filters</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Include Use Case Modals -->
+{% include 'core/includes/use_case_modal.html' %}
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Risk Level Chart
+    const riskCtx = document.getElementById('riskChart').getContext('2d');
+    new Chart(riskCtx, {
+        type: 'doughnut',
+        data: {
+            labels: {{ risk_levels|safe }},
+            datasets: [{
+                data: {{ risk_counts|safe }},
+                backgroundColor: [
+                    '#dc3545',  // High - danger
+                    '#ffc107',  // Medium - warning
+                    '#198754'   // Low - success
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+
+    // Status Distribution Chart
+    const statusCtx = document.getElementById('statusChart').getContext('2d');
+    new Chart(statusCtx, {
+        type: 'pie',
+        data: {
+            labels: {{ status_distribution|safe }}.map(item => item.status),
+            datasets: [{
+                data: {{ status_distribution|safe }}.map(item => item.count),
+                backgroundColor: [
+                    '#0d6efd',  // primary
+                    '#6610f2',  // indigo
+                    '#6f42c1',  // purple
+                    '#d63384'   // pink
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+
+    // Stakeholder Impact Chart
+    const stakeholderCtx = document.getElementById('stakeholderChart').getContext('2d');
+    new Chart(stakeholderCtx, {
+        type: 'bar',
+        data: {
+            labels: {{ stakeholder_distribution|safe }}.map(item => item.name),
+            datasets: [{
+                label: 'Total Use Cases',
+                data: {{ stakeholder_distribution|safe }}.map(item => item.use_case_count),
+                backgroundColor: '#0d6efd'
+            }, {
+                label: 'High Risk Cases',
+                data: {{ stakeholder_distribution|safe }}.map(item => item.high_risk_count),
+                backgroundColor: '#dc3545'
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        stepSize: 1
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+
+    // Initialize DataTable
+    const useCasesTable = new DataTable('#useCasesTable', {
+        pageLength: 10,
+        order: [[1, 'desc']], // Sort by risk level by default
+        dom: 'Bfrtip',
+        buttons: ['csv', 'excel', 'pdf']
+    });
+
+    // Filter functionality
+    document.getElementById('applyFilters').addEventListener('click', function() {
+        const formData = new FormData(document.getElementById('filterForm'));
+        const filters = Object.fromEntries(formData.entries());
+        
+        useCasesTable.columns().every(function() {
+            const column = this;
+            const filterValue = filters[column.header().textContent.toLowerCase()];
+            if (filterValue) {
+                column.search(filterValue).draw();
+            }
+        });
+        
+        $('#filterModal').modal('hide');
+    });
+});
+</script>
+{% endblock %}
